@@ -7,6 +7,7 @@ from telegram.ext import (
     CallbackQueryHandler, filters
 )
 from dotenv import load_dotenv
+from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -39,7 +40,7 @@ async def start_email(update: Update, context: CallbackContext):
     composing = True
     email_lines = []
     email_category = "uncategorized"
-    await update.message.reply_text("✍️ Started composing email. Send lines. If you wish to add a category, choose one from: #task, #idea, #random, #important, #event. Send /stopemail to finish.")
+    await update.message.reply_text("✍️ Started composing email. Send lines. If you wish to add a category, choose one from: .task, .idea, .random, .important, .event. Send /stopemail to finish.")
 
 @restricted
 async def stop_email(update: Update, context: CallbackContext):
@@ -55,7 +56,7 @@ def parse_category(line):
     categories = ['task', 'idea', 'random', 'important', 'event']
     changedCat = False
     for cat in categories:
-        if f"#{cat}" in line.lower():
+        if f".{cat}" in line.lower():
             if email_category != cat:
                 email_category = cat
                 changedCat = True
@@ -98,7 +99,12 @@ async def button_handler(update: Update, context: CallbackContext):
         await query.edit_message_text("❌ Email canceled.")
 
 def send_email(body: str, category: str):
-    subject = f"[{category.upper()}] Telegram {category.capitalize()} Note"
+    # Get current timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    
+    # Add timestamp to subject
+    subject = f"[{category.upper()}] Telegram {category.capitalize()} Note - {timestamp}"
+    
     msg = MIMEText(body)
     msg['Subject'] = subject
     msg['From'] = EMAIL_ADDRESS
