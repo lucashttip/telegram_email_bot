@@ -10,6 +10,15 @@ from telegram.ext import (
 )
 from dotenv import load_dotenv
 from datetime import datetime
+import threading
+
+def auto_shutdown():
+    import os
+    import time
+    # time.sleep(1800)  # 30 minutes
+    time.sleep(60)  # 1 minute
+    print("Shutting down bot...")
+    os._exit(0)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -209,6 +218,10 @@ def main():
     application.add_handler(CallbackQueryHandler(category_button_handler, pattern=r"^select_category_"))
     application.add_handler(CallbackQueryHandler(stop_email_button_handler, pattern=r"^stop_email$"))
     application.add_handler(CallbackQueryHandler(button_handler))
+
+    # Start the auto shutdown thread
+    threading.Thread(target=auto_shutdown).start()
+
 
     # Run the bot
     print("🤖 Bot is running...")
