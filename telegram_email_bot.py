@@ -12,14 +12,6 @@ from dotenv import load_dotenv
 from datetime import datetime
 import threading
 
-def auto_shutdown():
-    import os
-    import time
-    # time.sleep(1800)  # 30 minutes
-    time.sleep(60)  # 1 minute
-    print("Shutting down bot...")
-    os._exit(0)
-
 # Load environment variables from .env file
 load_dotenv()
 
@@ -30,6 +22,7 @@ AUTHORIZED_USER_ID = int(os.getenv("AUTHORIZED_USER_ID"))
 TO_EMAIL = os.getenv("TO_EMAIL", EMAIL_ADDRESS)
 SMTP_SERVER = os.getenv("SMTP_SERVER")
 SMTP_PORT = int(os.getenv("SMTP_PORT"))
+RENDER_URL = os.getenv("RENDER_URL", "https://render.com")
 
 # State variables
 composing = False
@@ -39,6 +32,29 @@ category_selected = False  # New state variable
 image_files = []  # List of (filename, bytes) tuples for images
 
 CATEGORY_LIST = ['task', 'idea', 'random', 'important', 'event']
+
+def auto_shutdown(application=None):
+    import time
+    time.sleep(1800)  # 30 minutes
+    print("Shutting down bot...")
+    # Send shutdown message to the authorized user if possible
+    if application is not None:
+        try:
+            # Use asyncio to send a message from a non-main thread
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(
+                application.bot.send_message(
+                    chat_id=AUTHORIZED_USER_ID,
+                    text=f"Bot is shutting down soon! To turn it back on, click this link: {RENDER_URL}"
+                )
+            )
+            loop.close()
+        except Exception as e:
+            print(f"Failed to send shutdown message: {e}")
+    import os
+    os._exit(0)
 
 def restricted(func):
     async def wrapped(update: Update, context: CallbackContext, *args, **kwargs):
@@ -219,9 +235,9 @@ def main():
     application.add_handler(CallbackQueryHandler(stop_email_button_handler, pattern=r"^stop_email$"))
     application.add_handler(CallbackQueryHandler(button_handler))
 
-    # Start the auto shutdown thread
-    threading.Thread(target=auto_shutdown).start()
-
+    # Start the auto shutdown thread, passing the application
+    import threading
+    threading.Thread(target=auto_shutdown, args=(application,), daemon=True).start()
 
     # Run the bot
     print("🤖 Bot is running...")
