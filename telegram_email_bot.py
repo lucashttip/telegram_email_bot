@@ -30,6 +30,8 @@ email_lines = []
 email_category = "uncategorized"
 category_selected = False  # New state variable
 image_files = []  # List of (filename, bytes) tuples for images
+subject_pending = False  # New state variable to track if subject is being set
+email_subject = None  # Store the subject globally
 
 CATEGORY_LIST = ['task', 'idea', 'random', 'important', 'event']
 
@@ -94,14 +96,16 @@ async def start_email(update: Update, context: CallbackContext):
 
 @restricted
 async def category_button_handler(update: Update, context: CallbackContext):
-    global composing, email_category, category_selected
+    global composing, email_category, category_selected, subject_pending, email_subject
     query = update.callback_query
     await query.answer()
     if query.data.startswith("select_category_"):
         email_category = query.data.replace("select_category_", "")
         category_selected = True
-        composing = True
-        await query.edit_message_text(f"Category selected: {email_category.capitalize()}\nYou can now compose your email. Send lines. When done, press the Stop Email button.")
+        composing = False
+        subject_pending = True
+        email_subject = None
+        await query.edit_message_text(f"Category selected: {email_category.capitalize()}\nPlease send the subject for your email.")
 
 @restricted
 async def stop_email(update: Update, context: CallbackContext):
@@ -118,13 +122,19 @@ async def stop_email(update: Update, context: CallbackContext):
 
 @restricted
 async def handle_message(update: Update, context: CallbackContext):
-    global composing, email_lines, email_category, category_selected
+    global composing, email_lines, email_category, category_selected, subject_pending, email_subject
     text = update.message.text
     if text == "Start Email":
         await start_email(update, context)
         return
     if not category_selected:
         await update.message.reply_text("⚠️ Please select a category first by pressing Start Email and choosing a category.")
+        return
+    if subject_pending:
+        email_subject = text
+        subject_pending = False
+        composing = True
+        await update.message.reply_text("Subject set! Now compose your email body. When done, press the Stop Email button or send images.")
         return
     if composing:
         email_lines.append(text)
@@ -182,9 +192,12 @@ async def button_handler(update: Update, context: CallbackContext):
         await show_start_button(update, context)
 
 def send_email(body: str, category: str):
-    global image_files
+    global image_files, email_subject
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M")
-    subject = f"[{category.upper()}] Telegram {category.capitalize()} Note - {timestamp}"
+    if email_subject:
+        subject = f"[{category.upper()}] {email_subject} - {timestamp}"
+    else:
+        subject = f"[{category.upper()}] Telegram {category.capitalize()} Note - {timestamp}"
 
     msg = MIMEMultipart('related')
     msg['Subject'] = subject
@@ -214,6 +227,7 @@ def send_email(body: str, category: str):
         server.send_message(msg)
 
     image_files.clear()  # Clear after sending
+    email_subject = None  # Clear after sending
 
 def main():
     TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
