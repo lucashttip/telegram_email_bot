@@ -8,6 +8,7 @@ from main_bot import application  # Assuming your main bot logic is moved to `ma
 
 app = Flask(__name__)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
 @app.route("/")
 def index():
@@ -22,9 +23,15 @@ async def webhook():
         print(f"Error handling webhook update: {e}")
     return Response("OK", status=200)
 
-@app.before_first_request
-def set_webhook():
-    url = os.getenv("WEBHOOK_URL")
-    if url:
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(application.bot.set_webhook(url=url))
+# One-time webhook setup
+def setup_webhook():
+    url = f"{WEBHOOK_URL}/webhook/{TOKEN}"
+    if not WEBHOOK_URL:
+        raise RuntimeError("Missing WEBHOOK_URL environment variable.")
+    print(f"📡 Setting Telegram webhook to: {f"{WEBHOOK_URL}/webhook/TOKEN"}")
+    asyncio.run(application.bot.set_webhook(url=url))
+
+if __name__ == "__main__":
+    setup_webhook()
+    port = int(os.environ.get("PORT", 5000))  # Render provides the PORT env var
+    app.run(host="0.0.0.0", port=port)
