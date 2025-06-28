@@ -15,10 +15,11 @@ def index():
     return "🤖 Bot is alive!"
 
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
-async def webhook():
+def webhook():
     try:
         update = Update.de_json(request.get_json(force=True), application.bot)
-        await application.process_update(update)
+        # Use asyncio.run to process the update synchronously
+        asyncio.run(application.process_update(update))
     except Exception as e:
         print(f"Error handling webhook update: {e}")
     return Response("OK", status=200)
