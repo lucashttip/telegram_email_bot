@@ -248,5 +248,5 @@ def build_application():
 
     return application
 
-application = build_application
+application = build_application()
 
