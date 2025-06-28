@@ -229,13 +229,10 @@ def send_email(body: str, category: str):
     image_files.clear()  # Clear after sending
     email_subject = None  # Clear after sending
 
-def main():
+def build_application():
     TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     if not TOKEN or not EMAIL_ADDRESS or not EMAIL_PASSWORD:
-        print("❌ Missing environment variables. Check your .env file.")
-        return
-
-    print("🤖 Bot is starting...")
+        raise ValueError("Missing enviroment variables")
     
     application = Application.builder().token(TOKEN).build()
 
@@ -249,21 +246,7 @@ def main():
     application.add_handler(CallbackQueryHandler(stop_email_button_handler, pattern=r"^stop_email$"))
     application.add_handler(CallbackQueryHandler(button_handler))
 
-    # Start the auto shutdown thread, passing the application
-    import threading
-    threading.Thread(target=auto_shutdown, args=(application,), daemon=True).start()
+    return application
 
-    # Run the bot
-    print("🤖 Bot is running...")
-    application.run_polling()
+application = build_application
 
-if __name__ == '__main__':
-    import platform
-
-    # Special handling for Windows
-    if platform.system() == 'Windows':
-        import asyncio
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-    # Run the main function
-    main()
