@@ -3,8 +3,7 @@ from telegram import Update
 from telegram.ext import Application
 import os
 import asyncio
-
-from main_bot import application  # Assuming your main bot logic is moved to `main_bot.py`
+from main_bot import application
 
 app = Flask(__name__)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -16,15 +15,16 @@ def index():
 
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
 def webhook():
+    print("Webhook called!")  # Log every call
     try:
-        update = Update.de_json(request.get_json(force=True), application.bot)
-        # Use asyncio.run to process the update synchronously
+        data = request.get_json(force=True)
+        print("Received data:", data)
+        update = Update.de_json(data, application.bot)
         asyncio.run(application.process_update(update))
     except Exception as e:
         print(f"Error handling webhook update: {e}")
     return Response("OK", status=200)
 
-# One-time webhook setup
 def setup_webhook():
     url = f"{WEBHOOK_URL}/webhook/{TOKEN}"
     if not WEBHOOK_URL:
@@ -34,5 +34,5 @@ def setup_webhook():
 
 if __name__ == "__main__":
     setup_webhook()
-    port = int(os.environ.get("PORT", 5000))  # Render provides the PORT env var
+    port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
