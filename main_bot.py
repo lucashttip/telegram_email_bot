@@ -73,7 +73,7 @@ async def show_start_button(update: Update, context: CallbackContext):
     keyboard = [["Start Email"]]
     reply_markup = ReplyKeyboardMarkup(keyboard, one_time_keyboard=True, resize_keyboard=True)
     if update.message:
-        await update.message.reply_text("Press the button below to start composing an email.", reply_markup=reply_markup)
+        await update.message.reply_text("Press the button below to start composing an email. To check if the bot is alive go to https://telegram-email-bot-a4a9.onrender.com/", reply_markup=reply_markup)
     else:
         # If triggered from a callback, send a new message
         await context.bot.send_message(chat_id=update.effective_user.id, text="Press the button below to start composing an email.", reply_markup=reply_markup)
