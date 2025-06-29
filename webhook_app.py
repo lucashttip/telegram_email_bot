@@ -15,21 +15,21 @@ def index():
 
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
 def webhook():
-    print("Webhook called!")  # Log every call
+    print("Webhook called!", flush=True)  # Log every call
     try:
         data = request.get_json(force=True)
-        print("Received data:", data)
+        print("Received data:", data, flush=True)
         update = Update.de_json(data, application.bot)
         asyncio.run(application.process_update(update))
     except Exception as e:
-        print(f"Error handling webhook update: {e}")
+        print(f"Error handling webhook update: {e}", flush=True)
     return Response("OK", status=200)
 
 def setup_webhook():
     url = f"{WEBHOOK_URL}/webhook/{TOKEN}"
     if not WEBHOOK_URL:
         raise RuntimeError("Missing WEBHOOK_URL environment variable.")
-    print(f"📡 Setting Telegram webhook to: {f"{WEBHOOK_URL}/webhook/TOKEN"}")
+    print(f"📡 Setting Telegram webhook to: {f'{WEBHOOK_URL}/webhook/TOKEN'}", flush=True)
     asyncio.run(application.bot.set_webhook(url=url))
 
 if __name__ == "__main__":
