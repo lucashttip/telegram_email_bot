@@ -3,14 +3,14 @@ from telegram import Update
 from telegram.ext import Application
 import os
 import asyncio
+import threading
 from main_bot import application
 
 app = Flask(__name__)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-
-# Initialize the application before starting Flask
-asyncio.run(application.initialize())
+initialized = False
+init_lock = threading.Lock()
 
 @app.route("/")
 def index():
@@ -18,8 +18,14 @@ def index():
 
 @app.route(f"/webhook/{TOKEN}", methods=["POST"])
 def webhook():
+    global initialized
     print("Webhook called!", flush=True)  # Log every call
     try:
+        with init_lock:
+            if not initialized:
+                asyncio.run(application.initialize())
+                initialized = True
+                print("Application initialized.", flush=True)
         data = request.get_json(force=True)
         print("Received data:", data, flush=True)
         update = Update.de_json(data, application.bot)
@@ -32,7 +38,7 @@ def setup_webhook():
     url = f"{WEBHOOK_URL}/webhook/{TOKEN}"
     if not WEBHOOK_URL:
         raise RuntimeError("Missing WEBHOOK_URL environment variable.")
-    print(f"📡 Setting Telegram webhook to: {f'{WEBHOOK_URL}/webhook/TOKEN'}", flush=True)
+    print(f"📡 Setting Telegram webhook to: {f"{WEBHOOK_URL}/webhook/TOKEN"}")
     asyncio.run(application.bot.set_webhook(url=url))
 
 if __name__ == "__main__":
