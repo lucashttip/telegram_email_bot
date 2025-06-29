@@ -9,6 +9,9 @@ app = Flask(__name__)
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
+# Initialize the application before starting Flask
+asyncio.run(application.initialize())
+
 @app.route("/")
 def index():
     return "🤖 Bot is alive!"
