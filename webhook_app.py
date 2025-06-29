@@ -12,6 +12,9 @@ WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 initialized = False
 init_lock = threading.Lock()
 
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 @app.route("/")
 def index():
     return "🤖 Bot is alive!"
@@ -23,13 +26,13 @@ def webhook():
     try:
         with init_lock:
             if not initialized:
-                asyncio.run(application.initialize())
+                loop.run_until_complete(application.initialize())
                 initialized = True
                 print("Application initialized.", flush=True)
         data = request.get_json(force=True)
         print("Received data:", data, flush=True)
         update = Update.de_json(data, application.bot)
-        asyncio.run(application.process_update(update))
+        loop.run_until_complete(application.process_update(update))
     except Exception as e:
         print(f"Error handling webhook update: {e}", flush=True)
     return Response("OK", status=200)
@@ -38,8 +41,8 @@ def setup_webhook():
     url = f"{WEBHOOK_URL}/webhook/{TOKEN}"
     if not WEBHOOK_URL:
         raise RuntimeError("Missing WEBHOOK_URL environment variable.")
-    print(f"📡 Setting Telegram webhook to: {f"{WEBHOOK_URL}/webhook/TOKEN"}")
-    asyncio.run(application.bot.set_webhook(url=url))
+    print(f"📡 Setting Telegram webhook to: {f'{WEBHOOK_URL}/webhook/TOKEN'}")
+    loop.run_until_complete(application.bot.set_webhook(url=url))
 
 if __name__ == "__main__":
     setup_webhook()
